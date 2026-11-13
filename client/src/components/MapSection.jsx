@@ -6,6 +6,7 @@ import {
   TileLayer,
   Marker,
   Popup,
+  Polyline,
   useMap,
   useMapEvents,
 } from "react-leaflet";
@@ -37,11 +38,39 @@ function MapRecenter({ location }) {
   return null;
 }
 
+function RouteDisplay({ routeData, pickup, destination }) {
+  const map = useMap();
+
+  const routePositions = routeData?.coordinates?.map(
+    ([lng, lat]) => [lat, lng]
+  ) || [];
+
+  useEffect(() => {
+    if (routePositions.length > 0) {
+      map.fitBounds(routePositions, {
+        padding: [40, 40],
+      });
+    }
+  }, [routeData, map]);
+
+  return routePositions.length > 0 ? (
+    <Polyline
+      positions={routePositions}
+      pathOptions={{
+        color: "#16A34A",
+        weight: 6,
+        opacity: 0.85,
+      }}
+    />
+  ) : null;
+}
+
 function MapSection({
   pickup,
   destination,
   onMapSelect,
   onLocationFound,
+  routeData,
 }) {
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -70,7 +99,9 @@ function MapSection({
     );
   };
 
-  const mapCenter = pickup || defaultCenter;
+  const mapCenter = pickup
+    ? [pickup.lat, pickup.lng]
+    : defaultCenter;
 
   return (
     <div className="relative w-full">
@@ -100,20 +131,26 @@ function MapSection({
 
           {pickup && (
             <Marker position={[pickup.lat, pickup.lng]}>
-              <Popup>Pickup location</Popup>
+              <Popup>Pickup: {pickup.address}</Popup>
             </Marker>
           )}
 
           {destination && (
             <Marker position={[destination.lat, destination.lng]}>
-              <Popup>Destination</Popup>
+              <Popup>Destination: {destination.address}</Popup>
             </Marker>
           )}
+
+          <RouteDisplay
+            routeData={routeData}
+            pickup={pickup}
+            destination={destination}
+          />
         </MapContainer>
       </div>
 
       <p className="mt-3 text-sm text-gray-500">
-        Click anywhere on the map to select the active location.
+        Select pickup and destination by clicking on the map.
       </p>
     </div>
   );
