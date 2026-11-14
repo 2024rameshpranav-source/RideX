@@ -13,8 +13,10 @@ function RideBooking({
   fareEstimate,
   selectedVehicle,
   setSelectedVehicle,
+  onFindRide,
+  bookingConfirmed,
 }) {
-  // Format the selected location
+  // Format location
   const formatLocation = (location) => {
     if (!location) return "";
 
@@ -33,7 +35,7 @@ function RideBooking({
     return `${Math.round(meters)} m`;
   };
 
-  // Format estimated travel duration
+  // Format duration
   const formatDuration = (seconds) => {
     const minutes = Math.ceil(seconds / 60);
 
@@ -49,14 +51,14 @@ function RideBooking({
       : `${hours} hr`;
   };
 
-  // Icons for different vehicle categories
+  // Vehicle icons
   const vehicleIcons = {
     mini: Car,
     sedan: CarFront,
     suv: Truck,
   };
 
-  // Handle ride booking submission
+  // Handle Find a ride
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -75,15 +77,12 @@ function RideBooking({
       return;
     }
 
-    alert(
-      `Ride Estimate Ready!\n\n` +
-      `Vehicle: ${selectedVehicle.name}\n` +
-      `Pickup: ${formatLocation(pickup)}\n` +
-      `Destination: ${formatLocation(destination)}\n\n` +
-      `Distance: ${formatDistance(routeData.distance)}\n` +
-      `Duration: ${formatDuration(routeData.duration)}\n` +
-      `Estimated Fare: ₹${fareEstimate.totalFare}`
-    );
+    if (typeof onFindRide !== "function") {
+      alert("Booking confirmation is not configured.");
+      return;
+    }
+
+    onFindRide();
   };
 
   return (
@@ -162,7 +161,7 @@ function RideBooking({
           </strong>
         </p>
 
-        {/* Route loading message */}
+        {/* Route loading */}
         {routeLoading && (
           <div className="bg-blue-50 text-blue-700 p-3 rounded-lg text-sm">
             Calculating your route...
@@ -178,9 +177,7 @@ function RideBooking({
             </h3>
 
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">
-                Distance
-              </span>
+              <span className="text-gray-600">Distance</span>
 
               <strong>
                 {formatDistance(routeData.distance)}
@@ -250,7 +247,7 @@ function RideBooking({
 
                     </div>
 
-                    {/* Vehicle multiplier and selection indicator */}
+                    {/* Multiplier and selected indicator */}
                     <div className="text-right shrink-0">
 
                       <span className="text-xs text-gray-500">
@@ -287,33 +284,18 @@ function RideBooking({
             </p>
 
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">
-                Base fare
-              </span>
-
-              <span>
-                ₹{fareEstimate.baseFare}
-              </span>
+              <span className="text-gray-600">Base fare</span>
+              <span>₹{fareEstimate.baseFare}</span>
             </div>
 
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">
-                Distance charge
-              </span>
-
-              <span>
-                ₹{fareEstimate.distanceCharge}
-              </span>
+              <span className="text-gray-600">Distance charge</span>
+              <span>₹{fareEstimate.distanceCharge}</span>
             </div>
 
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">
-                Time charge
-              </span>
-
-              <span>
-                ₹{fareEstimate.timeCharge}
-              </span>
+              <span className="text-gray-600">Time charge</span>
+              <span>₹{fareEstimate.timeCharge}</span>
             </div>
 
             <div className="border-t pt-3 flex justify-between items-center">
@@ -336,7 +318,7 @@ function RideBooking({
           </div>
         )}
 
-        {/* Find ride button */}
+        {/* Find a ride button */}
         <button
           type="submit"
           disabled={
@@ -345,7 +327,8 @@ function RideBooking({
             !routeData ||
             !fareEstimate ||
             !selectedVehicle ||
-            routeLoading
+            routeLoading ||
+            bookingConfirmed
           }
           className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors"
         >

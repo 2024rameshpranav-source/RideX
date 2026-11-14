@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import RideBooking from "../components/RideBooking";
 import MapSection from "../components/MapSection";
+import RideConfirmation from "../components/RideConfirmation";
 
 import reverseGeocode from "../services/geocoding";
 import getRoute from "../services/routeService";
@@ -12,21 +13,21 @@ import calculateFare from "../services/fareService";
 import vehicleOptions from "../utils/vehicleOptions";
 
 function Home() {
-  // Pickup and destination states
   const [pickup, setPickup] = useState(null);
   const [destination, setDestination] = useState(null);
 
-  // Controls which location the user is selecting
   const [selectionMode, setSelectionMode] = useState("pickup");
 
-  // Route states
   const [routeData, setRouteData] = useState(null);
   const [routeLoading, setRouteLoading] = useState(false);
 
-  // Selected vehicle (RideX Mini is selected by default)
   const [selectedVehicle, setSelectedVehicle] = useState(
     vehicleOptions[0]
   );
+
+  // Ride confirmation states
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [bookingConfirmed, setBookingConfirmed] = useState(false);
 
   // Handle map location selection
   const handleMapSelect = async (coordinates) => {
@@ -45,6 +46,8 @@ function Home() {
     } else {
       setDestination(location);
     }
+
+    setBookingConfirmed(false);
   };
 
   // Handle current GPS location
@@ -59,11 +62,11 @@ function Home() {
       address,
     });
 
-    // Automatically switch to destination selection
     setSelectionMode("destination");
+    setBookingConfirmed(false);
   };
 
-  // Calculate route whenever pickup or destination changes
+  // Calculate route whenever locations change
   useEffect(() => {
     if (!pickup || !destination) {
       setRouteData(null);
@@ -92,11 +95,28 @@ function Home() {
     };
   }, [pickup, destination]);
 
-  // Calculate fare using the selected vehicle multiplier
+  // Calculate fare for selected vehicle
   const fareEstimate = calculateFare(
     routeData,
     selectedVehicle.multiplier
   );
+
+  // Open confirmation window
+  const handleFindRide = () => {
+    if (!pickup || !destination || !routeData || !fareEstimate) {
+      alert("Please select your locations and wait for route calculation.");
+      return;
+    }
+
+    setBookingConfirmed(false);
+    setShowConfirmation(true);
+  };
+
+  // Confirm booking
+  const handleConfirmBooking = () => {
+    setShowConfirmation(false);
+    setBookingConfirmed(true);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -107,7 +127,7 @@ function Home() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
 
-          {/* Left Section - Booking Panel */}
+          {/* Left Section */}
           <div>
 
             <h1 className="text-5xl font-bold text-gray-900 leading-tight">
@@ -131,13 +151,15 @@ function Home() {
                 fareEstimate={fareEstimate}
                 selectedVehicle={selectedVehicle}
                 setSelectedVehicle={setSelectedVehicle}
+                onFindRide={handleFindRide}
+                bookingConfirmed={bookingConfirmed}
               />
 
             </div>
 
           </div>
 
-          {/* Right Section - Map */}
+          {/* Right Section */}
           <div>
 
             <MapSection
@@ -153,6 +175,39 @@ function Home() {
         </div>
 
       </main>
+
+      {/* Ride confirmation modal */}
+      {showConfirmation && (
+        <RideConfirmation
+          pickup={pickup}
+          destination={destination}
+          selectedVehicle={selectedVehicle}
+          routeData={routeData}
+          fareEstimate={fareEstimate}
+          onConfirm={handleConfirmBooking}
+          onClose={() => setShowConfirmation(false)}
+        />
+      )}
+
+      {/* Booking success message */}
+      {bookingConfirmed && (
+        <div className="fixed bottom-6 right-6 z-50 bg-green-600 text-white p-5 rounded-xl shadow-xl max-w-sm">
+          <h3 className="font-bold text-lg">
+            Ride confirmed!
+          </h3>
+
+          <p className="text-sm mt-1">
+            Your RideX booking has been confirmed successfully.
+          </p>
+
+          <button
+            onClick={() => setBookingConfirmed(false)}
+            className="mt-3 text-sm underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
     </div>
   );
